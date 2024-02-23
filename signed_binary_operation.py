@@ -56,3 +56,4 @@ def subtract_binary(binary1, binary2):
     
     elif binary1.startswith('1') and binary2.startswith('1'):
         return binary_operation.subtract_binary(binary2, binary1)
+    
