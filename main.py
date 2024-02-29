@@ -36,21 +36,10 @@ def is_signed():
         return is_signed()
     
 def twos_complement(binary_str):
-        inverted = ''.join('1' if bit == '0' else '0' for bit in binary_str)
-        twos_comp = bin(int(inverted, 2) + 1)[2:]
-        return twos_comp.zfill(len(binary_str))
+    inverted = ''.join('1' if bit == '0' else '0' for bit in binary_str)
+    twos_comp = bin(int(inverted, 2) + 1)[2:]
+    return twos_comp.zfill(len(binary_str))
 
-
-def binary_twos_complement(binary_str):
-    if '.' in binary_str:
-        integer_part, fractional_part = binary_str.split('.')
-        ones_complement_integer_part = ''.join('1' if bit == '0' else '0' for bit in integer_part)
-        twos_complement_fractional_part = twos_complement(fractional_part)
-        mixed_complement = f"{ones_complement_integer_part}.{twos_complement_fractional_part}"
-    else:
-        mixed_complement = twos_complement(binary_str)
-
-    return mixed_complement
 
 def binary_to_decimal(binary):
     decimal = 0.0
@@ -59,13 +48,10 @@ def binary_to_decimal(binary):
     if binary[0] == '1':
         is_negative = True
         # If it is two's complement, convert to positive decimal
-        binary = binary_twos_complement(binary[1:])
+        binary = twos_complement(binary[1:])
 
     if '.' in binary:
         integer_part, fractional_part = binary.split('.')
-
-        # Strip leading and trailing spaces from integer_part
-        integer_part = integer_part.strip()
 
         # Convert integer part
         for digit in integer_part:
@@ -80,9 +66,6 @@ def binary_to_decimal(binary):
         decimal += fractional_decimal
 
     else:
-        # Strip leading and trailing spaces from binary
-        binary = binary.strip()
-
         # Convert whole binary number if no fractional part
         for digit in binary:
             decimal = decimal * 2 + int(digit)
@@ -91,15 +74,12 @@ def binary_to_decimal(binary):
 
 
 
-
 def decimal_to_binary(decimal, length=0):
     if decimal == 0:
         return "0"
 
-    is_negative = False
-    if decimal < 0:
-        is_negative = True
-        decimal = abs(decimal)
+    is_negative = decimal < 0
+    decimal = abs(decimal)
 
     integer_part = int(decimal)
     fractional_part = decimal - integer_part if decimal != int(decimal) else 0.0
@@ -110,24 +90,22 @@ def decimal_to_binary(decimal, length=0):
         integer_part //= 2
 
     binary_fractional = ""
-    if fractional_part > 0:
-        binary_fractional = "."
-        for _ in range(8):  # Assuming 8 bits for fractional part
-            fractional_part *= 2
-            bit = int(fractional_part)
-            binary_fractional += str(bit)
-            fractional_part -= bit
+    while fractional_part > 0:
+        fractional_part *= 2
+        bit = int(fractional_part)
+        binary_fractional += str(bit)
+        fractional_part -= bit
 
-    binary_result = binary_integer + binary_fractional
+    binary_result = binary_integer + (("." + binary_fractional) if binary_fractional else "")
+
+    if is_negative:
+        binary_result = twos_complement(binary_result)
 
     if length > len(binary_result):
         padding = "0" * (length - len(binary_result))
         binary_result = padding + binary_result
 
-    return ('' + binary_result) if is_negative else binary_result
-
-
-
+    return binary_result
 
 def decimal_to_octal(decimal):
     is_negative = False
@@ -145,7 +123,7 @@ def decimal_to_octal(decimal):
         integer_part //= 8
 
     if is_negative:
-        octal_integer = '777777' + octal_integer  # Ensure the first digit is 7 for negative numbers
+        octal_integer = '7' + octal_integer  # Ensure the first digit is 7 for negative numbers
 
     octal_fractional = ""
     for _ in range(8):
@@ -156,9 +134,7 @@ def decimal_to_octal(decimal):
 
     octal_result = octal_integer + ('.' + octal_fractional if octal_fractional else '')
 
-    return octal_result 
-
-
+    return octal_result.rstrip('0')  # Remove trailing zeros
 
 def decimal_to_hexadecimal(decimal):
     is_negative = False
@@ -186,6 +162,61 @@ def decimal_to_hexadecimal(decimal):
 
     return ('' + hex_result) if is_negative else hex_result
 
+def binary_to_octal(binary):
+    is_negative = False
+    if binary[0] == '1':
+        is_negative = True
+        # If it is two's complement, convert to positive binary
+        binary = twos_complement(binary[1:])
+
+    integer_part, fractional_part = binary.split('.')
+
+    # Convert integer part to decimal
+    decimal_integer = binary_to_decimal(integer_part)
+
+    # Convert fractional part to decimal
+    fractional_decimal = 0.0
+    fractional_len = len(fractional_part)
+    for i in range(fractional_len):
+        fractional_decimal += int(fractional_part[i]) / (2 ** (i + 1))
+
+    # Combine integer and fractional parts
+    decimal = decimal_integer + fractional_decimal
+
+    # Convert decimal to octal
+    octal_result = decimal_to_octal(decimal)
+
+    return ('-' if is_negative else '') + octal_result.rstrip('0')  # Remove trailing zeros
+
+def binary_to_hexadecimal(binary):
+    is_negative = False
+    if binary[0] == '1':
+        is_negative = True
+        # If it is two's complement, convert to positive binary
+        binary = twos_complement(binary[1:])
+
+    integer_part, fractional_part = binary.split('.')
+
+    # Convert integer part to decimal
+    decimal_integer = binary_to_decimal(integer_part)
+
+    # Convert fractional part to decimal
+    fractional_decimal = 0.0
+    fractional_len = len(fractional_part)
+    for i in range(fractional_len):
+        fractional_decimal += int(fractional_part[i]) / (2 ** (i + 1))
+
+    # Combine integer and fractional parts
+    decimal = decimal_integer + fractional_decimal
+
+    # Convert decimal to hexadecimal
+    hexadecimal_result = decimal_to_hexadecimal(decimal)
+
+    return ('-' if is_negative else '') + hexadecimal_result
+
+
+
+
 def number_system_conversion():
     while True:
         print("\nNumber Conversion Menu:")
@@ -208,13 +239,14 @@ def number_system_conversion():
                 decimal_fractional = 0.0
                 fractional_len = len(fractional_part)
                 for i in range(fractional_len):
-                    decimal_fractional += int(fractional_part[i]) / (2**(i+1))
+                    decimal_fractional += int(fractional_part[i]) / (2 ** (i + 1))
                 decimal_result = decimal_integer + decimal_fractional
             else:
                 decimal_result = binary_to_decimal(binary_input)
                 if decimal_result is None:
                     print("Invalid binary number.")
                     continue
+
 
             octal_result = decimal_to_octal(decimal_result)
             hexadecimal_result = decimal_to_hexadecimal(decimal_result)
@@ -268,7 +300,7 @@ def number_system_conversion():
                     decimal_result = decimal_result * 8 + int(digit)
 
             decimal_result = -decimal_result if is_negative else decimal_result
-            binary_result = decimal_to_binary(decimal_result) 
+            binary_result = decimal_to_binary(decimal_result)
             hexadecimal_result = decimal_to_hexadecimal(decimal_result)
             print(f"\nOUTPUT: ")
             print(f"\nBinary: {binary_result}")
@@ -315,6 +347,7 @@ def number_system_conversion():
             break
         else:
             print("Invalid option. Please enter a valid choice.")
+
             
 if __name__ == "__main__":
     while True:
